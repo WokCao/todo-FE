@@ -7,20 +7,22 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Calendar, Clock, Flag, Save } from "lucide-react"
-import type { Task } from "@/interfaces/types"
-import { getTaskById, updateTask } from "@/interfaces/MockData"
+import type { Task, User } from "@/interfaces/types"
 import { useNavigate, useParams } from "react-router-dom"
+import { getTask, updateTask } from "@/APIs/Task"
+import { fetchUserProfile } from "@/APIs/Auth"
+import { useAuth } from "@/store/AuthContext"
 
 const priorityColors = {
-    low: "bg-green-100 text-green-800 border-green-200",
-    medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    high: "bg-red-100 text-red-800 border-red-200",
+    LOW: "bg-green-100 text-green-800 border-green-200",
+    MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    HIGH: "bg-red-100 text-red-800 border-red-200",
 }
 
 const statusColors = {
-    todo: "bg-gray-100 text-gray-800 border-gray-200",
-    "in-progress": "bg-blue-100 text-blue-800 border-blue-200",
-    completed: "bg-green-100 text-green-800 border-green-200",
+    TODO: "bg-gray-100 text-gray-800 border-gray-200",
+    IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
+    COMPLETED: "bg-green-100 text-green-800 border-green-200",
 }
 
 export default function TaskDetailPage() {
@@ -36,19 +38,26 @@ export default function TaskDetailPage() {
         priority: "medium" as Task["priority"],
         dueDate: "",
     })
+    const { dispatch } = useAuth();
 
-    useEffect(() => {
-        // Check authentication
-        const user = localStorage.getItem("user")
-        if (!user) {
+    const checkAuth = async () => {
+        const token = localStorage.getItem("token")
+        if (token) {
+            await fetchUserProfile().then((user: User) => {
+                if (user) {
+                    dispatch({ type: "SET_USER", payload: user });
+                } else {
+                    navigate("/auth/login")
+                }
+            })
+        } else {
             navigate("/auth/login")
-            return
         }
+    }
 
-        // Load task
+    const getTaskById = async (id: string) => {
         if (!taskId) return
-        const loadedTask = getTaskById(taskId)
-        console.log(loadedTask)
+        const loadedTask = await getTask(id)
         if (!loadedTask) {
             navigate("/tasks")
             return
@@ -62,12 +71,20 @@ export default function TaskDetailPage() {
             priority: loadedTask.priority,
             dueDate: loadedTask.dueDate,
         })
+    }
+
+    useEffect(() => {
+        // Check authentication
+        checkAuth()
+
+        // Load task
+        getTaskById(taskId!)
     }, [taskId])
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!task) return
 
-        const updatedTask = updateTask(task.id, editForm)
+        const updatedTask = await updateTask(task.id, editForm)
         if (updatedTask) {
             setTask(updatedTask)
             setIsEditing(false)

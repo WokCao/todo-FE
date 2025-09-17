@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
+import { login } from "@/APIs/Auth"
+import { useAuth } from "@/store/AuthContext"
 
 export function LoginForm() {
     const [email, setEmail] = useState("")
@@ -17,6 +19,7 @@ export function LoginForm() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const navigate = useNavigate()
+    const { dispatch } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -36,19 +39,25 @@ export function LoginForm() {
             return
         }
 
-        // Simulate API call
-        setTimeout(() => {
-            // Mock authentication - in real app, this would be an API call
-            const mockUser = {
-                id: "1",
-                email: email,
-                name: email.split("@")[0],
-            }
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters")
+            setIsLoading(false)
+            return
+        }
 
-            localStorage.setItem("user", JSON.stringify(mockUser))
+        const token = await login(email, password);
+        console.log(token);
+        if (!token) {
+            setError("Invalid email or password")
+            setIsLoading(false)
+            return
+        } else {
+            localStorage.setItem("token", token);
+            dispatch({ type: "LOGIN", payload: { token, user: null } });
             navigate("/")
             setIsLoading(false)
-        }, 1000)
+            return
+        }
     }
 
     return (

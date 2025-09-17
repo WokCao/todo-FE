@@ -3,22 +3,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
-import type { Task } from "@/interfaces/types"
-import { getTasks } from "@/interfaces/MockData"
+import type { Task, User } from "@/interfaces/types"
 import { AddTaskFab } from "@/components/AddTaskFab"
 import { AiChat } from "@/components/AIChat"
 import { useNavigate } from "react-router-dom"
+import { getTasks } from "@/APIs/Task"
+import { fetchUserProfile } from "@/APIs/Auth"
+import { useAuth } from "@/store/AuthContext"
 
 const priorityColors = {
-    low: "bg-green-100 text-green-800 border-green-200",
-    medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    high: "bg-red-100 text-red-800 border-red-200",
+    LOW: "bg-green-100 text-green-800 border-green-200",
+    MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    HIGH: "bg-red-100 text-red-800 border-red-200",
 }
 
 const statusColors = {
-    todo: "bg-gray-100 text-gray-800 border-gray-200",
-    "in-progress": "bg-blue-100 text-blue-800 border-blue-200",
-    completed: "bg-green-100 text-green-800 border-green-200",
+    TODO: "bg-gray-100 text-gray-800 border-gray-200",
+    IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
+    COMPLETED: "bg-green-100 text-green-800 border-green-200",
 }
 
 export default function CalendarPage() {
@@ -26,23 +28,39 @@ export default function CalendarPage() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState<string | null>(null)
+    const { dispatch } = useAuth();
+
+    const checkAuth = async () => {
+            const token = localStorage.getItem("token")
+            if (token) {
+                await fetchUserProfile().then((user: User) => {
+                    if (user) {
+                        dispatch({ type: "SET_USER", payload: user });
+                    } else {
+                        navigate("/auth/login")
+                    }
+                })
+            } else {
+                navigate("/auth/login")
+            }
+        }
+
+    const loadTasks = async () => {
+        const loadedTasks = await getTasks()
+        setTasks(loadedTasks.content)
+    }
 
     useEffect(() => {
         // Check authentication
-        const user = localStorage.getItem("user")
-        if (!user) {
-            navigate("/auth/login")
-            return
-        }
+        checkAuth()
 
         // Load tasks
-        const loadedTasks = getTasks()
-        setTasks(loadedTasks)
+        loadTasks()
     }, [])
 
-    const handleTaskAdded = () => {
-        const loadedTasks = getTasks()
-        setTasks(loadedTasks)
+    const handleTaskAdded = async () => {
+        const loadedTasks = await getTasks()
+        setTasks(loadedTasks.content)
     }
 
     // Get tasks for a specific date
@@ -251,17 +269,17 @@ export default function CalendarPage() {
                                     <p className="text-sm font-medium">Task Status:</p>
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
-                                            <Badge className={statusColors.todo}>
+                                            <Badge className={statusColors.TODO}>
                                                 To Do
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge className={statusColors["in-progress"]}>
+                                            <Badge className={statusColors.IN_PROGRESS}>
                                                 In Progress
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge className={statusColors.completed}>
+                                            <Badge className={statusColors.COMPLETED}>
                                                 Completed
                                             </Badge>
                                         </div>

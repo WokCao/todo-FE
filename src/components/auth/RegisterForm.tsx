@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
+import { register } from "@/APIs/Auth"
 
 export function RegisterForm() {
     const [name, setName] = useState("")
@@ -38,8 +39,8 @@ export function RegisterForm() {
             return
         }
 
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters long")
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters long")
             setIsLoading(false)
             return
         }
@@ -50,19 +51,16 @@ export function RegisterForm() {
             return
         }
 
-        // Simulate API call
-        setTimeout(() => {
-            // Mock registration - in real app, this would be an API call
-            const mockUser = {
-                id: Date.now().toString(),
-                email: email,
-                name: name,
-            }
-
-            localStorage.setItem("user", JSON.stringify(mockUser))
-            navigate("/")
+        const result = await register(name, email, password);
+        if (!result) {
+            setError("Registration failed. Please try again.")
             setIsLoading(false)
-        }, 1000)
+            return
+        } else {
+            navigate("/auth/login")
+            setIsLoading(false)
+            return
+        }
     }
 
     return (

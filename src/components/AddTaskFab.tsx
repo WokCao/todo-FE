@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus } from "lucide-react"
 import type { Task } from "../interfaces/types"
-import { addTask } from "../interfaces/MockData"
+import { createTask } from "@/APIs/Task"
 
 interface AddTaskFabProps {
   onTaskAdded?: () => void
@@ -30,7 +30,8 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    priority: "medium" as Task["priority"],
+    priority: "MEDIUM" as Task["priority"],
+    status: "TODO" as Task["status"],
     dueDate: "",
   })
 
@@ -48,19 +49,22 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
     const newTask: Omit<Task, "id" | "createdAt" | "updatedAt"> = {
       title: formData.title.trim(),
       description: formData.description.trim(),
-      status: "todo",
+      status: formData.status,
       priority: formData.priority,
       dueDate: formData.dueDate,
     }
 
+    console.log("Creating task:", newTask)
+
     // Add task
-    addTask(newTask)
+    await createTask(newTask)
 
     // Reset form
     setFormData({
       title: "",
       description: "",
-      priority: "medium",
+      priority: "MEDIUM",
+      status: "TODO",
       dueDate: "",
     })
 
@@ -77,7 +81,8 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
     setFormData({
       title: "",
       description: "",
-      priority: "medium",
+      priority: "MEDIUM",
+      status: "TODO",
       dueDate: "",
     })
     setIsOpen(false)
@@ -132,9 +137,26 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: Task["status"]) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODO">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="DONE">Done</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -143,7 +165,7 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
               <Label htmlFor="dueDate">Due Date *</Label>
               <Input
                 id="dueDate"
-                type="date"
+                type="datetime-local"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 required

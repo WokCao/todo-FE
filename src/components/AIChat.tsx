@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageCircle, Send, X, Bot, User } from "lucide-react"
-import { getTasks } from "../interfaces/MockData"
+import { getTasks } from "@/APIs/Task"
 
 interface Message {
   id: string
@@ -38,15 +38,16 @@ export function AiChat() {
     }
   }, [messages])
 
-  const generateAIResponse = (userMessage: string): string => {
-    const tasks = getTasks()
+  const generateAIResponse = async (userMessage: string): Promise<string> => {
+    const response = await getTasks()
+    const tasks = response.content
     const lowercaseMessage = userMessage.toLowerCase()
 
     // Analyze tasks for contextual responses
-    const highPriorityTasks = tasks.filter((t) => t.priority === "high" && t.status !== "completed")
-    const overdueTasks = tasks.filter((t) => new Date(t.dueDate) < new Date() && t.status !== "completed")
+    const highPriorityTasks = tasks.filter((t) => t.priority === "HIGH" && t.status !== "COMPLETED")
+    const overdueTasks = tasks.filter((t) => new Date(t.dueDate) < new Date() && t.status !== "COMPLETED")
     const todayTasks = tasks.filter((t) => t.dueDate === new Date().toISOString().split("T")[0])
-    const inProgressTasks = tasks.filter((t) => t.status === "in-progress")
+    const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS")
 
     // Response patterns based on user input
     if (
@@ -92,15 +93,15 @@ export function AiChat() {
     }
 
     if (lowercaseMessage.includes("progress") || lowercaseMessage.includes("status")) {
-      const completedTasks = tasks.filter((t) => t.status === "completed")
-      const todoTasks = tasks.filter((t) => t.status === "todo")
+      const completedTasks = tasks.filter((t) => t.status === "COMPLETED")
+      const todoTasks = tasks.filter((t) => t.status === "TODO")
 
       return `Here's your progress: ${completedTasks.length} completed, ${inProgressTasks.length} in progress, and ${todoTasks.length} to-do tasks. ${inProgressTasks.length > 0 ? `Consider finishing "${inProgressTasks[0].title}" before starting new tasks.` : "Great job staying organized!"}`
     }
 
     if (lowercaseMessage.includes("deadline") || lowercaseMessage.includes("due")) {
       const upcomingTasks = tasks
-        .filter((t) => t.status !== "completed" && new Date(t.dueDate) >= new Date())
+        .filter((t) => t.status !== "COMPLETED" && new Date(t.dueDate) >= new Date())
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
         .slice(0, 3)
 
@@ -142,10 +143,10 @@ export function AiChat() {
 
     // Simulate AI thinking time
     setTimeout(
-      () => {
+      async () => {
         const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
-          content: generateAIResponse(userMessage.content),
+          content: await generateAIResponse(userMessage.content),
           sender: "ai",
           timestamp: new Date(),
         }
