@@ -62,13 +62,14 @@ export default function TasksPage() {
         const loadedTasks = await getTasks({ page: currentPage, size: TASKS_PER_PAGE, sortBy: sortField, sortDir: sortDirection, status: filter });
         setTasks(loadedTasks.content)
         setTotalPages(loadedTasks.totalPages)
-        setTotalTasks(loadedTasks.totalElements)
     }
 
     const fetchTaskCounts = async () => {
         const todoTasks = await getTasks({ status: "TODO"});
         const inProgressTasks = await getTasks({ status: "IN_PROGRESS"});
         const completedTasks = await getTasks({ status: "COMPLETED"});
+        const allTasks = await getTasks({});
+        setTotalTasks(allTasks.totalElements);
 
         setTotalTodoTasks(todoTasks.totalElements);
         setTotalInProgressTasks(inProgressTasks.totalElements);

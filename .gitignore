@@ -26,3 +26,4 @@ dist-ssr
 MockData.ts
 /src/components/ui
 /src/assets
+/@/components/ui

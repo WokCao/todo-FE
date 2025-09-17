@@ -27,7 +27,7 @@ export default function CalendarPage() {
     const navigate = useNavigate()
     const [tasks, setTasks] = useState<Task[]>([])
     const [currentDate, setCurrentDate] = useState(new Date())
-    const [selectedDate, setSelectedDate] = useState<string | null>(null)
+    const [selectedDate, setSelectedDate] = useState<string | null>(new Date().toISOString().split("T")[0]) // Default to today
     const { dispatch } = useAuth();
 
     const checkAuth = async () => {
@@ -65,7 +65,13 @@ export default function CalendarPage() {
 
     // Get tasks for a specific date
     const getTasksForDate = (date: string): Task[] => {
-        return tasks.filter((task) => task.dueDate === date)
+        return tasks.filter((task) => task.dueDate.split("T")[0] === date)
+    }
+
+    // Format local datetime
+    const formatLocalDateTime = (date: Date): string => {
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     // Generate calendar days
@@ -74,7 +80,6 @@ export default function CalendarPage() {
         const month = currentDate.getMonth()
 
         const firstDay = new Date(year, month, 1)
-        const lastDay = new Date(year, month + 1, 0)
         const startDate = new Date(firstDay)
         startDate.setDate(startDate.getDate() - firstDay.getDay())
 
@@ -82,7 +87,8 @@ export default function CalendarPage() {
         const currentDateObj = new Date(startDate)
 
         for (let i = 0; i < 42; i++) {
-            const dateString = currentDateObj.toISOString().split("T")[0]
+            // Use local datetime
+            const dateString = formatLocalDateTime(currentDateObj).split("T")[0]
             const dayTasks = getTasksForDate(dateString)
             const isCurrentMonth = currentDateObj.getMonth() === month
             const isToday = dateString === new Date().toISOString().split("T")[0]
@@ -174,11 +180,11 @@ export default function CalendarPage() {
                                         <div
                                             key={index}
                                             className={`
-                        min-h-[80px] p-1 border border-border rounded-md cursor-pointer transition-colors
-                        ${day.isCurrentMonth ? "bg-card hover:bg-muted/50" : "bg-muted/20 text-muted-foreground"}
-                        ${day.isToday ? "ring-2 ring-primary" : ""}
-                        ${selectedDate === day.dateString ? "bg-primary/10 border-primary" : ""}
-                      `}
+                                                        min-h-[80px] p-1 border border-border rounded-md cursor-pointer transition-colors
+                                                        ${day.isCurrentMonth ? "bg-card hover:bg-muted/50" : "bg-muted/20 text-muted-foreground"}
+                                                        ${day.isToday ? "ring-2 ring-primary" : ""}
+                                                        ${selectedDate === day.dateString ? "bg-primary/10 border-primary" : ""}
+                                                    `}
                                             onClick={() => setSelectedDate(day.dateString)}
                                         >
                                             <div className="text-sm font-medium mb-1">{day.date.getDate()}</div>
@@ -187,9 +193,9 @@ export default function CalendarPage() {
                                                     <div
                                                         key={task.id}
                                                         className={`
-                              text-xs px-1 py-0.5 rounded truncate cursor-pointer
-                              ${statusColors[task.status]}
-                            `}
+                                                                    text-xs px-1 py-0.5 rounded truncate cursor-pointer
+                                                                    ${statusColors[task.status]}
+                                                                    `}
                                                         onClick={(e) => {
                                                             e.stopPropagation()
                                                             navigate(`/tasks/${task.id}`)
@@ -245,7 +251,7 @@ export default function CalendarPage() {
                                                     {task.priority}
                                                 </Badge>
                                             </div>
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.description}</p>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.description || "No description available"}</p>
                                             <Badge className={statusColors[task.status]}>
                                                 {task.status.replace("-", " ")}
                                             </Badge>
@@ -258,7 +264,7 @@ export default function CalendarPage() {
                         {/* Calendar legend */}
                         <Card className="mt-6">
                             <CardHeader>
-                                <CardTitle className="text-lg">Legend</CardTitle>
+                                <CardTitle className="text-lg">Information</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex items-center gap-2">
