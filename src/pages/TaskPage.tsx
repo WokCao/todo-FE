@@ -12,12 +12,8 @@ import { useAuth } from "@/store/AuthContext"
 import { fetchUserProfile } from "@/APIs/Auth"
 import { getTasks } from "@/APIs/Task"
 
-type SortField = "name" | "date" | "priority"
+type SortField = "name" | "dueDate" | "priority"
 type SortDirection = "ASC" | "DESC"
-
-const TASKS_PER_PAGE = 6
-
-const priorityOrder = { LOW: 1, MEDIUM: 2, HIGH: 3 }
 
 const priorityColors = {
     LOW: "bg-green-100 text-green-800 border-green-200",
@@ -31,13 +27,20 @@ const statusColors = {
     COMPLETED: "bg-green-100 text-green-800 border-green-200",
 }
 
+const TASKS_PER_PAGE = 6
+
 export default function TasksPage() {
     const navigate = useNavigate()
     const [tasks, setTasks] = useState<Task[]>([])
     const [filter, setFilter] = useState<"ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED">("ALL")
-    const [sortField, setSortField] = useState<SortField>("date")
+    const [sortField, setSortField] = useState<SortField>("dueDate")
     const [sortDirection, setSortDirection] = useState<SortDirection>("ASC")
     const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalTasks, setTotalTasks] = useState(0)
+    const [totalTodoTasks, setTotalTodoTasks] = useState(0)
+    const [totalInProgressTasks, setTotalInProgressTasks] = useState(0)
+    const [totalCompletedTasks, setTotalCompletedTasks] = useState(0)
     const { dispatch } = useAuth();
 
     const checkAuth = async () => {
@@ -56,43 +59,36 @@ export default function TasksPage() {
     }
 
     const loadTasks = async () => {
-        const loadedTasks = await getTasks()
+        const loadedTasks = await getTasks({ page: currentPage, size: TASKS_PER_PAGE, sortBy: sortField, sortDir: sortDirection, status: filter });
         setTasks(loadedTasks.content)
+        setTotalPages(loadedTasks.totalPages)
+        setTotalTasks(loadedTasks.totalElements)
+    }
+
+    const fetchTaskCounts = async () => {
+        const todoTasks = await getTasks({ status: "TODO"});
+        const inProgressTasks = await getTasks({ status: "IN_PROGRESS"});
+        const completedTasks = await getTasks({ status: "COMPLETED"});
+
+        setTotalTodoTasks(todoTasks.totalElements);
+        setTotalInProgressTasks(inProgressTasks.totalElements);
+        setTotalCompletedTasks(completedTasks.totalElements);
     }
 
     useEffect(() => {
         checkAuth();
-        loadTasks();
+        fetchTaskCounts();
     }, [])
+
+    useEffect(() => {
+        loadTasks();
+    }, [currentPage, sortField, sortDirection, filter])
 
     const handleTaskAdded = () => {
         loadTasks()
+        fetchTaskCounts();
         setCurrentPage(1)
     }
-
-    const filteredTasks = tasks.filter((task) => (filter === "ALL" ? true : task.status === filter))
-
-    const sortedTasks = [...filteredTasks].sort((a, b) => {
-        let comparison = 0
-
-        switch (sortField) {
-            case "name":
-                comparison = a.title.localeCompare(b.title)
-                break
-            case "date":
-                comparison = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-                break
-            case "priority":
-                comparison = priorityOrder[a.priority] - priorityOrder[b.priority]
-                break
-        }
-
-        return sortDirection === "ASC" ? comparison : -comparison
-    })
-
-    const totalPages = Math.ceil(sortedTasks.length / TASKS_PER_PAGE)
-    const startIndex = (currentPage - 1) * TASKS_PER_PAGE
-    const paginatedTasks = sortedTasks.slice(startIndex, startIndex + TASKS_PER_PAGE)
 
     const handleFilterChange = (newFilter: typeof filter) => {
         setFilter(newFilter)
@@ -122,22 +118,22 @@ export default function TasksPage() {
                 {/* Filter buttons */}
                 <div className="flex gap-2 mb-6">
                     <Button variant={filter === "ALL" ? "default" : "outline"} onClick={() => handleFilterChange("ALL")}>
-                        All Tasks ({tasks.length})
+                        All Tasks ({totalTasks})
                     </Button>
                     <Button variant={filter === "TODO" ? "default" : "outline"} onClick={() => handleFilterChange("TODO")}>
-                        To Do ({tasks.filter((t) => t.status === "TODO").length})
+                        To Do ({totalTodoTasks})
                     </Button>
                     <Button
                         variant={filter === "IN_PROGRESS" ? "default" : "outline"}
                         onClick={() => handleFilterChange("IN_PROGRESS")}
                     >
-                        In Progress ({tasks.filter((t) => t.status === "IN_PROGRESS").length})
+                        In Progress ({totalInProgressTasks})
                     </Button>
                     <Button
                         variant={filter === "COMPLETED" ? "default" : "outline"}
                         onClick={() => handleFilterChange("COMPLETED")}
                     >
-                        Completed ({tasks.filter((t) => t.status === "COMPLETED").length})
+                        Completed ({totalCompletedTasks})
                     </Button>
                 </div>
 
@@ -152,7 +148,7 @@ export default function TasksPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="name">Name</SelectItem>
-                            <SelectItem value="date">Date</SelectItem>
+                            <SelectItem value="dueDate">Due Date</SelectItem>
                             <SelectItem value="priority">Priority</SelectItem>
                         </SelectContent>
                     </Select>
@@ -167,7 +163,7 @@ export default function TasksPage() {
 
                 {/* Tasks grid */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {paginatedTasks.map((task) => (
+                    {tasks.map((task) => (
                         <Card
                             key={task.id}
                             className="cursor-pointer hover:shadow-md transition-shadow"
@@ -232,7 +228,7 @@ export default function TasksPage() {
                     </div>
                 )}
 
-                {filteredTasks.length === 0 && (
+                {tasks.length === 0 && (
                     <div className="text-center py-12">
                         <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold text-foreground mb-2">No tasks found</h3>
@@ -244,10 +240,10 @@ export default function TasksPage() {
                     </div>
                 )}
 
-                {filteredTasks.length > 0 && (
+                {totalTasks > 0 && (
                     <div className="text-center text-sm text-muted-foreground mt-4">
-                        Showing {startIndex + 1}-{Math.min(startIndex + TASKS_PER_PAGE, filteredTasks.length)} of{" "}
-                        {filteredTasks.length} tasks
+                        Showing {currentPage * TASKS_PER_PAGE - TASKS_PER_PAGE + 1}-{Math.min(currentPage * TASKS_PER_PAGE, totalTasks)} of{" "}
+                        {totalTasks} tasks
                     </div>
                 )}
             </main>

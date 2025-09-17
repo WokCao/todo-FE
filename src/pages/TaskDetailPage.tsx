@@ -34,8 +34,8 @@ export default function TaskDetailPage() {
     const [editForm, setEditForm] = useState({
         title: "",
         description: "",
-        status: "todo" as Task["status"],
-        priority: "medium" as Task["priority"],
+        status: task?.status as Task["status"],
+        priority: task?.priority as Task["priority"],
         dueDate: "",
     })
     const { dispatch } = useAuth();
@@ -97,6 +97,10 @@ export default function TaskDetailPage() {
             year: "numeric",
             month: "long",
             day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
         })
     }
 
@@ -144,7 +148,7 @@ export default function TaskDetailPage() {
                             <CardHeader>
                                 {isEditing ? (
                                     <div className="space-y-4">
-                                        <div>
+                                        <div className="grid gap-2">
                                             <Label htmlFor="title">Title</Label>
                                             <Input
                                                 id="title"
@@ -153,7 +157,7 @@ export default function TaskDetailPage() {
                                                 placeholder="Task title"
                                             />
                                         </div>
-                                        <div>
+                                        <div className="grid gap-2">
                                             <Label htmlFor="description">Description</Label>
                                             <Textarea
                                                 id="description"
@@ -167,7 +171,7 @@ export default function TaskDetailPage() {
                                 ) : (
                                     <>
                                         <CardTitle className="text-2xl">{task.title}</CardTitle>
-                                        <CardDescription className="text-base leading-relaxed">{task.description}</CardDescription>
+                                        <CardDescription className="text-base leading-relaxed">{task.description || "No description provided."}</CardDescription>
                                     </>
                                 )}
                             </CardHeader>
@@ -192,9 +196,9 @@ export default function TaskDetailPage() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="todo">To Do</SelectItem>
-                                                <SelectItem value="in-progress">In Progress</SelectItem>
-                                                <SelectItem value="completed">Completed</SelectItem>
+                                                <SelectItem value="TODO">To Do</SelectItem>
+                                                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                                                <SelectItem value="COMPLETED">Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     ) : (
@@ -215,9 +219,9 @@ export default function TaskDetailPage() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="low">Low</SelectItem>
-                                                <SelectItem value="medium">Medium</SelectItem>
-                                                <SelectItem value="high">High</SelectItem>
+                                                <SelectItem value="LOW">Low</SelectItem>
+                                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                                <SelectItem value="HIGH">High</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     ) : (
@@ -234,7 +238,7 @@ export default function TaskDetailPage() {
                                     <Label className="text-sm font-medium text-muted-foreground">Due Date</Label>
                                     {isEditing ? (
                                         <Input
-                                            type="date"
+                                            type="datetime-local"
                                             value={editForm.dueDate}
                                             onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
                                             className="mt-1"

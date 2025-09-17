@@ -36,9 +36,8 @@ export default function HomePage() {
 
     // Fetch active tasks from the API
     const fetchActiveTasks = async () => {
-        const tasks = await getTasks()
-        const active = tasks.content.filter(task => task.status === "TODO").length
-        setActiveTasks(active)
+        const tasks = await getTasks({ status: "TODO" })
+        setActiveTasks(tasks.totalElements)
     }
 
     // Fetch number of tasks due today from the API

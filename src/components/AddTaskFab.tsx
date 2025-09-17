@@ -156,7 +156,7 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
                 <SelectContent>
                   <SelectItem value="TODO">To Do</SelectItem>
                   <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="DONE">Done</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
