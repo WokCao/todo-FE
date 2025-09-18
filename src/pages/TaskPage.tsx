@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Calendar, Clock, Flag, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
 import type { Task, User } from "@/interfaces/types"
 import { AddTaskFab } from "@/components/AddTaskFab"
-import { AiChat } from "@/components/AIChat"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/store/AuthContext"
 import { fetchUserProfile } from "@/APIs/Auth"
@@ -250,7 +249,6 @@ export default function TasksPage() {
             </main>
 
             <AddTaskFab onTaskAdded={handleTaskAdded} />
-            <AiChat />
         </div>
     )
 }

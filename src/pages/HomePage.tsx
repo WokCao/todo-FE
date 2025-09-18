@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddTaskFab } from "@/components/AddTaskFab"
-import { AiChat } from "@/components/AIChat"
 import { useNavigate } from "react-router-dom"
 import { fetchUserProfile } from "@/APIs/Auth"
 import { useAuth } from "@/store/AuthContext"
@@ -139,7 +138,6 @@ export default function HomePage() {
             </main>
 
             <AddTaskFab />
-            <AiChat />
         </div>
     )
 }

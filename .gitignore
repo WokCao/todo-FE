@@ -24,6 +24,5 @@ dist-ssr
 *.sw?
 
 MockData.ts
-/src/components/ui
 /src/assets
 /@/components/ui
