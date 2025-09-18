@@ -21,6 +21,7 @@ const statusColors = {
     TODO: "bg-gray-100 text-gray-800 border-gray-200",
     IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
     COMPLETED: "bg-green-100 text-green-800 border-green-200",
+    OVERDUE: "bg-red-100 text-red-800 border-red-200",
 }
 
 export default function CalendarPage() {
@@ -47,6 +48,7 @@ export default function CalendarPage() {
 
     const loadTasks = async () => {
         const loadedTasks = await getTasks()
+        console.log("Loaded tasks:", loadedTasks)
         setTasks(loadedTasks.content)
     }
 
@@ -111,7 +113,6 @@ export default function CalendarPage() {
         const newDate = new Date(currentDate)
         newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1))
         setCurrentDate(newDate)
-        setSelectedDate(null)
     }
 
     const monthNames = [
@@ -266,14 +267,10 @@ export default function CalendarPage() {
                             <CardHeader>
                                 <CardTitle className="text-lg">Information</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded border-2 border-primary"></div>
-                                    <span className="text-sm">Today</span>
-                                </div>
-                                <div className="space-y-2">
+                            <CardContent>
+                                <div className="flex gap-2 items-start flex-wrap">
                                     <p className="text-sm font-medium">Task Status:</p>
-                                    <div className="space-y-1">
+                                    <div className="flex space-x-2 space-y-2 flex-wrap items-start">
                                         <div className="flex items-center gap-2">
                                             <Badge className={statusColors.TODO}>
                                                 To Do
@@ -287,6 +284,11 @@ export default function CalendarPage() {
                                         <div className="flex items-center gap-2">
                                             <Badge className={statusColors.COMPLETED}>
                                                 Completed
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge className={statusColors.OVERDUE}>
+                                                Overdue
                                             </Badge>
                                         </div>
                                     </div>

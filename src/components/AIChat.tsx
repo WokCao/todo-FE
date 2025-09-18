@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageCircle, Send, X, Bot, User } from "lucide-react"
-import { getTasks } from "@/APIs/Task"
+import { getSuggestion } from "@/APIs/Task"
 
 interface Message {
   id: string
@@ -23,7 +23,7 @@ export function AiChat() {
     {
       id: "1",
       content:
-        "Hi! I'm your AI task assistant. I can help you organize and prioritize your tasks. Try asking me something like 'How should I arrange my tasks?' or 'What should I focus on today?'",
+        "Hi! I'm your AI task assistant. I can help you organize and prioritize your tasks. Try asking me something like 'How should I arrange my tasks in September 2025?' (Note that I can only provide suggestions when your questions include month and year.)",
       sender: "ai",
       timestamp: new Date(),
     },
@@ -39,92 +39,38 @@ export function AiChat() {
   }, [messages])
 
   const generateAIResponse = async (userMessage: string): Promise<string> => {
-    const response = await getTasks()
-    const tasks = response.content
-    const lowercaseMessage = userMessage.toLowerCase()
-
-    // Analyze tasks for contextual responses
-    const highPriorityTasks = tasks.filter((t) => t.priority === "HIGH" && t.status !== "COMPLETED")
-    const overdueTasks = tasks.filter((t) => new Date(t.dueDate) < new Date() && t.status !== "COMPLETED")
-    const todayTasks = tasks.filter((t) => t.dueDate === new Date().toISOString().split("T")[0])
-    const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS")
-
-    // Response patterns based on user input
-    if (
-      lowercaseMessage.includes("arrange") ||
-      lowercaseMessage.includes("organize") ||
-      lowercaseMessage.includes("prioritize")
-    ) {
-      if (highPriorityTasks.length > 0) {
-        return `I recommend focusing on your ${highPriorityTasks.length} high-priority tasks first: ${highPriorityTasks
-          .slice(0, 2)
-          .map((t) => `"${t.title}"`)
-          .join(
-            ", ",
-          )}${highPriorityTasks.length > 2 ? ` and ${highPriorityTasks.length - 2} more` : ""}. These should take precedence over lower-priority items.`
-      }
-      return "I suggest organizing your tasks by priority and due date. Start with high-priority items, then tackle tasks due soon. Consider grouping similar tasks together for better efficiency."
+    // Simple keyword check for month and year
+    const monthYearPattern = /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/i;
+    if (!monthYearPattern.test(userMessage)) {
+      return "Please include a specific month and year in your question so I can provide relevant task suggestions."
     }
 
-    if (lowercaseMessage.includes("today") || lowercaseMessage.includes("focus")) {
-      if (overdueTasks.length > 0) {
-        return `You have ${overdueTasks.length} overdue task${overdueTasks.length === 1 ? "" : "s"} that need immediate attention: ${overdueTasks
-          .slice(0, 2)
-          .map((t) => `"${t.title}"`)
-          .join(", ")}. I recommend addressing these first.`
-      }
-      if (todayTasks.length > 0) {
-        return `For today, focus on these ${todayTasks.length} task${todayTasks.length === 1 ? "" : "s"} due: ${todayTasks.map((t) => `"${t.title}"`).join(", ")}. Break them into smaller steps if they seem overwhelming.`
-      }
-      if (highPriorityTasks.length > 0) {
-        return `Today, I suggest focusing on your high-priority tasks: ${highPriorityTasks
-          .slice(0, 2)
-          .map((t) => `"${t.title}"`)
-          .join(", ")}. These will have the biggest impact on your goals.`
-      }
-      return "Start your day by reviewing your task list and identifying the 2-3 most important items. Focus on completing these before moving to less critical tasks."
+    // Extract month and year from user message
+    const match = userMessage.match(monthYearPattern);
+    if (!match) {
+      return "I couldn't identify the month and year in your question. Please try again."
     }
 
-    if (lowercaseMessage.includes("overdue") || lowercaseMessage.includes("late")) {
-      if (overdueTasks.length > 0) {
-        return `You have ${overdueTasks.length} overdue task${overdueTasks.length === 1 ? "" : "s"}. I recommend addressing "${overdueTasks[0].title}" first as it's been overdue the longest. Consider breaking large tasks into smaller, manageable pieces.`
+    const [month, year] = match[0].split(" ");
+
+    // Fetch tasks from the API
+    try {
+      const tasksResponse = await getSuggestion(`How should I arrange my tasks in ${month} ${year}?`);
+      if (!tasksResponse || !tasksResponse.schedule || tasksResponse.schedule.length === 0) {
+        return "I couldn't fetch task suggestions at the moment. Please try again later."
       }
-      return "Great news! You don't have any overdue tasks. Keep up the good work with staying on schedule!"
+
+      // Convert tasks into a readable string
+      const formattedSchedule = tasksResponse.schedule
+        .map(task => {
+          return `• [${task.taskId}] ${task.title} — start: ${task.suggestedStart}, duration: ${task.durationMinutes} min. Summary: ${task.summary}`
+        })
+        .join("\n")
+
+      return formattedSchedule
+    } catch (error) {
+      return "There was an error fetching task suggestions. Please try again later."
     }
-
-    if (lowercaseMessage.includes("progress") || lowercaseMessage.includes("status")) {
-      const completedTasks = tasks.filter((t) => t.status === "COMPLETED")
-      const todoTasks = tasks.filter((t) => t.status === "TODO")
-
-      return `Here's your progress: ${completedTasks.length} completed, ${inProgressTasks.length} in progress, and ${todoTasks.length} to-do tasks. ${inProgressTasks.length > 0 ? `Consider finishing "${inProgressTasks[0].title}" before starting new tasks.` : "Great job staying organized!"}`
-    }
-
-    if (lowercaseMessage.includes("deadline") || lowercaseMessage.includes("due")) {
-      const upcomingTasks = tasks
-        .filter((t) => t.status !== "COMPLETED" && new Date(t.dueDate) >= new Date())
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-        .slice(0, 3)
-
-      if (upcomingTasks.length > 0) {
-        return `Your upcoming deadlines: ${upcomingTasks.map((t) => `"${t.title}" (${new Date(t.dueDate).toLocaleDateString()})`).join(", ")}. I suggest working on these in chronological order.`
-      }
-      return "You don't have any upcoming deadlines. This is a great time to work on long-term projects or get ahead on future tasks!"
-    }
-
-    if (lowercaseMessage.includes("help") || lowercaseMessage.includes("what can you do")) {
-      return "I can help you with task management! Ask me about:\n• Prioritizing and organizing tasks\n• What to focus on today\n• Managing overdue items\n• Checking your progress\n• Planning around deadlines\n• General productivity tips"
-    }
-
-    // Default responses for general queries
-    const defaultResponses = [
-      "Based on your current tasks, I recommend focusing on high-priority items first. Would you like me to suggest a specific order?",
-      "Consider using the Pomodoro technique: work for 25 minutes, then take a 5-minute break. This can help with focus and productivity.",
-      "Try grouping similar tasks together. For example, batch all your communication tasks or all your creative work for better efficiency.",
-      "Don't forget to celebrate small wins! Completing tasks, even small ones, builds momentum for bigger achievements.",
-      "If a task seems overwhelming, try breaking it down into smaller, actionable steps. This makes it easier to get started.",
-    ]
-
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
   }
 
   const handleSendMessage = async () => {
@@ -205,12 +151,44 @@ export function AiChat() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[70%] rounded-lg px-3 py-2 text-sm ${
-                    message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`max-w-[70%] px-3 py-2 text-sm break-words
+                    ${message.sender === "user"
+                      ? "bg-primary text-primary-foreground rounded-lg"
+                      : "bg-gradient-to-br from-pink-50 to-blue-50 border border-blue-200 shadow-sm rounded-2xl"}
+                  `}
+                  style={message.sender === "ai" ? { borderLeft: '4px solid #60a5fa', boxShadow: '0 2px 8px 0 #e0e7ef' } : {}}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  <div className="text-xs opacity-70 mt-1">
+                  {message.sender === "ai" && message.content.includes('• [') ? (
+                    <div className="space-y-2">
+                      {message.content.split('\n').map((line, idx) => {
+                        if (line.trim().startsWith('• [')) {
+                          // Parse: • [taskId] title — start: ..., duration: ... min. Summary: ...
+                          const match = line.match(/^• \[(.+?)\] (.+?) — start: (.+?), duration: (\d+) min\. Summary: (.+)$/);
+                          if (match) {
+                            const [, taskId, title, start, duration, summary] = match;
+                            return (
+                              <div key={idx} className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 flex flex-col shadow-sm">
+                                <div className="font-semibold text-blue-900 mb-1">{title}</div>
+                                <div className="text-xs text-blue-700 mb-1 flex flex-wrap gap-2">
+                                  <span className="bg-blue-200/60 rounded px-1">ID: {taskId}</span>
+                                  <span className="bg-green-100 rounded px-1">Start: {start}</span>
+                                  <span className="bg-yellow-100 rounded px-1">⏱ {duration} min</span>
+                                </div>
+                                <div className="text-xs text-gray-700 mt-1"><span className="font-medium">Summary:</span> {summary}</div>
+                              </div>
+                            );
+                          }
+                        }
+                        // fallback for other lines
+                        return line.trim() !== '' ? (
+                          <div key={idx} className="text-blue-700 font-medium mb-1">{line}</div>
+                        ) : null;
+                      })}
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                  )}
+                  <div className="text-xs opacity-70 mt-1 text-right">
                     {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>

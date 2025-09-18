@@ -35,7 +35,9 @@ export default function HomePage() {
 
     // Fetch active tasks from the API
     const fetchActiveTasks = async () => {
-        const tasks = await getTasks({ status: "TODO" })
+        const toDoTasks = await getTasks({ status: "TODO" })
+        const inProgressTasks = await getTasks({ status: "IN_PROGRESS" })
+        const tasks = { totalElements: toDoTasks.totalElements + inProgressTasks.totalElements };
         setActiveTasks(tasks.totalElements)
     }
 

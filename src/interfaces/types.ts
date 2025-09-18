@@ -19,7 +19,7 @@ export interface User {
 export interface CreateTaskDTO {
 	title: string;
 	description: string;
-	status: "TODO" | "IN_PROGRESS" | "COMPLETED";
+	status: "TODO" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE";
 	priority: "LOW" | "MEDIUM" | "HIGH";
 	dueDate: string; // ISO string
 }
@@ -30,7 +30,7 @@ export interface GetTasksParams {
 	size?: number;
 	sortBy?: string;
 	sortDir?: "ASC" | "DESC";
-	status?: "ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED";
+	status?: "ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE";
 	priority?: "ALL" | "LOW" | "MEDIUM" | "HIGH";
 	fromDateTime?: string; // ISO string
 	toDateTime?: string;   // ISO string
@@ -45,4 +45,15 @@ export interface PagedDataDTO<T> {
 	pageSize: number;
 	totalElements: number;
 	totalPages: number;
+}
+
+
+export interface SuggestionResponse {
+  schedule: {
+	taskId: number;
+	title: string;
+	suggestedStart: string;
+	durationMinutes: number;
+	summary: string;
+  }[];
 }

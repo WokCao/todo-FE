@@ -24,6 +24,7 @@ const statusColors = {
     TODO: "bg-gray-100 text-gray-800 border-gray-200",
     IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
     COMPLETED: "bg-green-100 text-green-800 border-green-200",
+    OVERDUE: "bg-red-100 text-red-800 border-red-200",
 }
 
 const TASKS_PER_PAGE = 6
@@ -31,7 +32,7 @@ const TASKS_PER_PAGE = 6
 export default function TasksPage() {
     const navigate = useNavigate()
     const [tasks, setTasks] = useState<Task[]>([])
-    const [filter, setFilter] = useState<"ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED">("ALL")
+    const [filter, setFilter] = useState<"ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE">("ALL")
     const [sortField, setSortField] = useState<SortField>("dueDate")
     const [sortDirection, setSortDirection] = useState<SortDirection>("ASC")
     const [currentPage, setCurrentPage] = useState(1)

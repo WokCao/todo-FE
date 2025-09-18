@@ -1,5 +1,5 @@
 import api from "./Interceptor";
-import type { CreateTaskDTO, GetTasksParams, PagedDataDTO, Task } from "../interfaces/types";
+import { type SuggestionResponse, type CreateTaskDTO, type GetTasksParams, type PagedDataDTO, type Task } from "../interfaces/types";
 
 
 // Create a new task
@@ -31,3 +31,8 @@ export const deleteTask = async (id: string | number) => {
 	const res = await api.delete<{ message: string }>(`/tasks/${id}`);
 	return res.data;
 };
+
+export const getSuggestion = async (question: string) => {
+	const res = await api.post<SuggestionResponse>("/tasks/suggestion", { question });
+	return res.data;
+}

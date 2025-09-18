@@ -56,8 +56,14 @@ export function AddTaskFab({ onTaskAdded }: AddTaskFabProps) {
 
     console.log("Creating task:", newTask)
 
-    // Add task
-    await createTask(newTask)
+    try {
+      // Add task
+      await createTask(newTask)
+    } catch (error) {
+      console.error("Error creating task:", error)
+      setIsLoading(false)
+      return
+    }
 
     // Reset form
     setFormData({
